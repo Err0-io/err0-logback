@@ -1,5 +1,7 @@
 package io.err0.logback;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -11,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Err0Appender extends AppenderBase {
+public class Err0Appender extends AppenderBase<ILoggingEvent> {
 
     public static class Err0Log {
         public Err0Log(final String error_code, final long ts, final String message, final JsonObject metadata) {
@@ -30,20 +32,8 @@ public class Err0Appender extends AppenderBase {
 
     private static final ConcurrentLinkedQueue<Err0Log> queue = new ConcurrentLinkedQueue<>();
 
-    protected Err0Appender(String url, String token, String realm_uuid, String prj_uuid, String pattern) {
+    public Err0Appender() {
         super();
-        this.baseUrl = url;
-        try {
-            this.url = new URL(url + "~/api/bulk-log");
-        }
-        catch (MalformedURLException e) {
-            System.err.println(e.getMessage());
-            this.url = null;
-        }
-        this.token = token;
-        this.realm_uuid = realm_uuid;
-        this.prj_uuid = prj_uuid;
-        this.pattern = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             public void run() {
                 //System.err.println("shutdown hook");
@@ -56,12 +46,32 @@ public class Err0Appender extends AppenderBase {
         this.thread.start();
     }
 
-    private final String baseUrl;
+    // properties, and accessors
+    private String baseUrl;
     private URL url;
-    private final String token;
-    private final String realm_uuid;
-    private final String prj_uuid;
-    private final Pattern pattern;
+    public String getUrl() { return baseUrl; }
+    public void setUrl(String value) { baseUrl = value; try { url = new URL(value + "~/api/bulk-log"); } catch (MalformedURLException e) { url = null; } }
+
+    private String token;
+    public String getToken() { return token; }
+    public void setToken(String value) { token = value; }
+
+    private String realm_uuid;
+    public String getRealm_uuid() { return realm_uuid; }
+    public void setRealm_uuid(String value) { realm_uuid = value; }
+
+    private String prj_uuid;
+    public String getPrj_uuid() { return prj_uuid; }
+    public void setPrj_uuid(String value) { prj_uuid = value; }
+
+    private Pattern pattern;
+    private String patternValue;
+    public void setPattern(String value) {
+        this.patternValue = value;
+        this.pattern = Pattern.compile(value, Pattern.CASE_INSENSITIVE);
+    }
+    public String getPattern() { return this.patternValue; }
+
     private boolean stopped = false;
 
     private boolean pollQueue() {
@@ -118,21 +128,27 @@ public class Err0Appender extends AppenderBase {
     };
 
     @Override
-    protected void append(Object eventObject) {
-        final String formattedMessage = event.getMessage().getFormattedMessage();
+    protected void append(ILoggingEvent event) {
+        final String formattedMessage = event.getFormattedMessage();
+        System.out.println("ERR0\t" + formattedMessage);
         final Matcher matcher = pattern.matcher(formattedMessage);
         if (matcher.find()) {
             final String error_code = matcher.group(1);
-            final long ts = event.getTimeMillis();
+            final long ts = event.getTimeStamp();
             final JsonObject metadata = new JsonObject();
-            final JsonObject log4j2Metadata = new JsonObject();
+            final JsonObject logbackMetadata = new JsonObject();
             final Level level = event.getLevel();
-            final StackTraceElement source = event.getSource();
-            log4j2Metadata.addProperty("level", level.name());
-            log4j2Metadata.addProperty("source_class", source.getClassName());
-            log4j2Metadata.addProperty("source_file", source.getFileName());
-            log4j2Metadata.addProperty("source_line", source.getLineNumber());
-            metadata.add("log4j2", log4j2Metadata);
+            logbackMetadata.addProperty("level", level.levelStr);
+            if (event.hasCallerData()) {
+                final StackTraceElement stack[] = event.getCallerData();
+                if (stack.length > 0) {
+                    final StackTraceElement source = stack[0];
+                    logbackMetadata.addProperty("source_class", source.getClassName());
+                    logbackMetadata.addProperty("source_file", source.getFileName());
+                    logbackMetadata.addProperty("source_line", source.getLineNumber());
+                }
+            }
+            metadata.add("logback", logbackMetadata);
             queue.add(new Err0Log(error_code, ts, formattedMessage, metadata));
         }
     }
