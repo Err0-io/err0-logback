@@ -59,6 +59,8 @@ public class Err0Http {
     }
     public static void call(final URL url, final String token, final JsonObject payload)
     {
+        System.err.println("ERR0TRACE\t" + payload.toString());
+
         long l = errorUntil.get();
         if (l != 0) {
             if (new Date().getTime() < l) {
