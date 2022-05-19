@@ -59,8 +59,6 @@ public class Err0Http {
     }
     public static void call(final URL url, final String token, final JsonObject payload)
     {
-        System.err.println("ERR0TRACE\t" + payload.toString());
-
         long l = errorUntil.get();
         if (l != 0) {
             if (new Date().getTime() < l) {
@@ -92,6 +90,7 @@ public class Err0Http {
 
                         @Override
                         public void failed(final Exception ex) {
+                            System.err.println("ERR0R!!!" + (null == ex ? "ERR0 http failure" : ex.getMessage()));
                             inFlight.decrementAndGet();
                             errorUntil.set(new Date().getTime() + (30L*60L*1000L)); // 30 minutes before a retry
                         }
