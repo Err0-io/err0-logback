@@ -20,14 +20,16 @@ import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.reactor.ssl.TlsDetails;
 
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 import java.net.URL;
 import java.util.Date;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Err0Http {
+    final static Logger logger = LoggerFactory.getLogger(Err0Http.class);
     final static CloseableHttpAsyncClient client;
     static {
         final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
@@ -90,7 +92,7 @@ public class Err0Http {
 
                         @Override
                         public void failed(final Exception ex) {
-                            System.err.println("ERR0R!!!" + (null == ex ? "ERR0 http failure" : ex.getMessage()));
+                            logger.warn("err0.io log publish failed.", ex);
                             inFlight.decrementAndGet();
                             errorUntil.set(new Date().getTime() + (30L*60L*1000L)); // 30 minutes before a retry
                         }
