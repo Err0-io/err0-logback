@@ -9,7 +9,8 @@ before_script:
 publish:
   stage: publish
   script: gradle publish
-  tags: docker
+  tags:
+    - docker
   only:
     refs:
       - main
