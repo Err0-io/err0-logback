@@ -37,6 +37,13 @@ publishing {
     maven {
       url = uri("https://gitlab.bluetrail.software/api/v4/groups/286/-/packages/maven")
       name = "BTS-GitLab"
+      credentials(HttpHeaderCredentials) {
+        name = 'Job-Token'
+        value = System.getenv("CI_JOB_TOKEN")
+      }
+      authentication {
+        header(HttpHeaderAuthentication)
+      }
     }
   }
 }
