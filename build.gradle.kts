@@ -35,7 +35,7 @@ publishing {
   }
   repositories {
     maven {
-      url = uri("https://gitlab.bluetrail.software/api/v4/groups/286/-/packages/maven")
+      url = uri("https://gitlab.bluetrail.software/api/v4/projects/" + System.getenv("CI_PROJECT_ID") + "/-/packages/maven")
       name = "BTS-GitLab"
     }
   }
