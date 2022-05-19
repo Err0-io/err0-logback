@@ -130,7 +130,7 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
     @Override
     protected void append(ILoggingEvent event) {
         final String formattedMessage = event.getFormattedMessage();
-        System.out.println("ERR0\t" + formattedMessage);
+        // DEBUG System.out.println("ERR0\t" + formattedMessage);
         final Matcher matcher = pattern.matcher(formattedMessage);
         if (matcher.find()) {
             final String error_code = matcher.group(1);
