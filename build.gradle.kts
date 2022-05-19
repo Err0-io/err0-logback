@@ -3,6 +3,7 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent.*
 plugins {
   java
   application
+  `maven-publish`
 }
 
 group = "io.err0.logback"
@@ -11,6 +12,33 @@ version = "1.0.0-SNAPSHOT"
 
 repositories {
   mavenCentral()
+}
+
+publishing {
+  publications {
+    create<MavenPublication>("mavenJava") {
+      artifactId = "err0-logback"
+      from(components["java"])
+      versionMapping {
+        usage("java-api") {
+          fromResolutionOf("runtimeClasspath")
+        }
+        usage("java-runtime") {
+          fromResolutionResult()
+        }
+      }
+      pom {
+        name.set("err0-logback")
+        description.set("Logback adapter for err0")
+      }
+    }
+  }
+  repositories {
+    maven {
+      url = uri("https://gitlab.bluetrail.software/api/v4/groups/286/-/packages/maven")
+      name = "BTS-GitLab"
+    }
+  }
 }
 
 val junitJupiterVersion = "5.7.0"

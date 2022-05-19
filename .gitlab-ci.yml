@@ -1,0 +1,15 @@
+image: gradle:alpine
+
+variables:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+before_script:
+  - export GRADLE_USER_HOME=`pwd`/.gradle
+
+publish:
+  stage: publish
+  script: gradle publish
+  tags: docker
+  only:
+    refs:
+      - main
