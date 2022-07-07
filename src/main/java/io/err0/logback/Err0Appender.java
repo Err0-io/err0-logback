@@ -28,8 +28,6 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
         public final JsonObject metadata;
     }
 
-
-
     private static final ConcurrentLinkedQueue<Err0Log> queue = new ConcurrentLinkedQueue<>();
 
     public Err0Appender() {
@@ -56,21 +54,7 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
     public String getToken() { return token; }
     public void setToken(String value) { token = value; }
 
-    private String realm_uuid;
-    public String getRealm_uuid() { return realm_uuid; }
-    public void setRealm_uuid(String value) { realm_uuid = value; }
-
-    private String prj_uuid;
-    public String getPrj_uuid() { return prj_uuid; }
-    public void setPrj_uuid(String value) { prj_uuid = value; }
-
-    private Pattern pattern;
-    private String patternValue;
-    public void setPattern(String value) {
-        this.patternValue = value;
-        this.pattern = Pattern.compile(value, Pattern.CASE_INSENSITIVE);
-    }
-    public String getPattern() { return this.patternValue; }
+    private static Pattern pattern = Pattern.compile("\\[([A-Z][A-Z0-9]*-[0-9]+)\\]");
 
     private boolean stopped = false;
 
@@ -86,8 +70,6 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
             } while (null != logEvent);
             if (list.size() > 0) {
                 JsonObject bulkLog = new JsonObject();
-                bulkLog.addProperty("realm_uuid", realm_uuid);
-                bulkLog.addProperty("prj_uuid", prj_uuid);
                 JsonArray logs = new JsonArray();
                 bulkLog.add("logs", logs);
                 for (Err0Log log : list) {

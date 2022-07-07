@@ -12,8 +12,6 @@ import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.function.Factory;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.hc.core5.http.message.StatusLine;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
@@ -21,6 +19,7 @@ import org.apache.hc.core5.reactor.ssl.TlsDetails;
 
 import javax.net.ssl.SSLEngine;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,13 +69,15 @@ public class Err0Http {
 
         inFlight.incrementAndGet();
         try {
+            final byte[] body = payload.toString().getBytes(StandardCharsets.UTF_8);
             final HttpHost target = new HttpHost(url.getProtocol(), url.getHost(), url.getPort());
             final HttpClientContext clientContext = HttpClientContext.create();
             final SimpleHttpRequest request = SimpleRequestBuilder.post()
                     .setHttpHost(target)
                     .setPath(url.getPath())
                     .setHeader("Authorization", "Bearer " + token)
-                    .setBody(payload.toString(), ContentType.APPLICATION_JSON)
+                    .setHeader("Content-Length", Long.toString(body.length))
+                    .setBody(body, ContentType.APPLICATION_JSON)
                     .build();
 
             final Future<SimpleHttpResponse> future = client.execute(
