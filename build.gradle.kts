@@ -6,9 +6,8 @@ plugins {
   signing
 }
 
-group = "io.err0.logback"
-group = "io.err0.logback"
-version = "1.0.2"
+group = "io.err0"
+version = "1.0.3"
 
 repositories {
   mavenCentral()
