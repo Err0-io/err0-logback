@@ -1,58 +1,19 @@
 package io.err0.logback;
 
 import com.google.gson.JsonObject;
-import org.apache.hc.client5.http.async.methods.*;
-import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.protocol.HttpClientContext;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.function.Factory;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
-import org.apache.hc.core5.http2.HttpVersionPolicy;
-import org.apache.hc.core5.io.CloseMode;
-import org.apache.hc.core5.reactor.ssl.TlsDetails;
-
-import javax.net.ssl.SSLEngine;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 public class Err0Http {
     final static Logger logger = LoggerFactory.getLogger(Err0Http.class);
-    final static CloseableHttpAsyncClient client;
-    static {
-        final TlsStrategy tlsStrategy = ClientTlsStrategyBuilder.create()
-                .useSystemProperties()
-                // IMPORTANT uncomment the following method when running Java 9 or older
-                // in order for ALPN support to work and avoid the illegal reflective
-                // access operation warning
-                .setTlsDetailsFactory(new Factory<SSLEngine, TlsDetails>() {
-                    @Override
-                    public TlsDetails create(final SSLEngine sslEngine) {
-                        return new TlsDetails(sslEngine.getSession(), sslEngine.getApplicationProtocol());
-                    }
-                })
-                .build();
-        final PoolingAsyncClientConnectionManager cm = PoolingAsyncClientConnectionManagerBuilder.create()
-                .setTlsStrategy(tlsStrategy)
-                .build();
-        client = HttpAsyncClients.custom()
-                .setVersionPolicy(HttpVersionPolicy.NEGOTIATE)
-                .setConnectionManager(cm)
-                .build();
-
-        client.start();
-    }
     final static AtomicInteger inFlight = new AtomicInteger(0);
     final static AtomicLong errorUntil = new AtomicLong(0L);
     public static boolean canCall() {
@@ -67,46 +28,34 @@ public class Err0Http {
             }
         }
 
+        final byte[] body = payload.toString().getBytes(StandardCharsets.UTF_8);
+
         inFlight.incrementAndGet();
-        try {
-            final byte[] body = payload.toString().getBytes(StandardCharsets.UTF_8);
-            final HttpHost target = new HttpHost(url.getProtocol(), url.getHost(), url.getPort());
-            final HttpClientContext clientContext = HttpClientContext.create();
-            final SimpleHttpRequest request = SimpleRequestBuilder.post()
-                    .setHttpHost(target)
-                    .setPath(url.getPath())
-                    .setHeader("Authorization", "Bearer " + token)
-                    .setHeader("Content-Length", Long.toString(body.length))
-                    .setBody(body, ContentType.APPLICATION_JSON)
-                    .build();
 
-            final Future<SimpleHttpResponse> future = client.execute(
-                    SimpleRequestProducer.create(request),
-                    SimpleResponseConsumer.create(),
-                    clientContext,
-                    new FutureCallback<SimpleHttpResponse>() {
-                        @Override
-                        public void completed(final SimpleHttpResponse response) {
-                            inFlight.decrementAndGet();
-                            errorUntil.set(0);
-                        }
+        final OkHttpClient client = new OkHttpClient.Builder()
+                .build();
 
-                        @Override
-                        public void failed(final Exception ex) {
-                            logger.warn("err0.io log publish failed.", ex);
-                            inFlight.decrementAndGet();
-                            errorUntil.set(new Date().getTime() + (30L*60L*1000L)); // 30 minutes before a retry
-                        }
+        Request request = new Request.Builder()
+                .url(url.toExternalForm())
+                .addHeader("Authorization", "Bearer " + token)
+                .addHeader("Content-Length", Long.toString(body.length))
+                .addHeader("Content-Type", "applicaton/json; charset=utf-8")
+                .post(RequestBody.create(body))
+                .build();
 
-                        @Override
-                        public void cancelled() {
-                            inFlight.decrementAndGet();
-                        }
-                    });
-        }
-        catch (Exception ex) {
-            // ignore
-        }
+        Call call = client.newCall(request);
+        call.enqueue(new Callback() {
+            public void onResponse(Call call, Response response)
+                    throws IOException {
+                inFlight.decrementAndGet();
+            }
+
+            public void onFailure(Call call, IOException e) {
+                // can't log error
+                logger.warn("Failed: " + url.toExternalForm(), e);
+                inFlight.decrementAndGet();
+            }
+        });
     }
 
     public static void shutdown() {
@@ -114,6 +63,5 @@ public class Err0Http {
         while (inFlight.get() > 0) {
             Thread.yield();
         }
-        client.close(CloseMode.GRACEFUL);
     }
 }
