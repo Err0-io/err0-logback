@@ -114,7 +114,7 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
         final String formattedMessage = event.getFormattedMessage();
         // DEBUG System.out.println("ERR0\t" + formattedMessage);
         final Matcher matcher = pattern.matcher(formattedMessage);
-        if (matcher.find()) {
+        while (matcher.find()) {
             final String error_code = matcher.group(1);
             final long ts = event.getTimeStamp();
             final JsonObject metadata = new JsonObject();

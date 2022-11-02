@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "io.err0"
-version = "1.0.3"
+version = "1.1.0"
 
 repositories {
   mavenCentral()
