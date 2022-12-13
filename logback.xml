@@ -2,8 +2,8 @@
 <configuration>
 
     <appender name="ERR0" class="io.err0.logback.Err0Appender">
-        <url>https://open-source-dev.err0.io:8443/</url>
-        <token>2.f_L5NsMxYdWQx_bv1owREKjxbW80EI4gI5tlcfQSBjJxDNooYcE_GqnuM-iG2H4kmaL9qoU8weNYKrYR5ix59nef3cknJJwXoxuobHu2VyF5FOz3_b65gQ.03QOg06zxjE-qeHle_JzrHoSboao6IzO2euNXM4ihIo</token>
+        <url>https://open-source.dev.err0.io:8443/</url>
+        <token>2.nVEp5Qu_Yee59hyV20F50lox7fB_jXa2Z43k5tXKz1lKvtpUrxiEhIHt45-1b3NArlGUEZ8YeUVl-9O4jXFyZPrexRBVb_KjqZq9iK43mAdGW5P6XHrUVw.4GoyKjck4dv1Ex5h5EqxmGqk_FdN-CECZem1zOxoBr4</token>
     </appender>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

@@ -16,16 +16,12 @@ import java.util.regex.Pattern;
 public class Err0Appender extends AppenderBase<ILoggingEvent> {
 
     public static class Err0Log {
-        public Err0Log(final String error_code, final long ts, final String message, final JsonObject metadata) {
+        public Err0Log(final String error_code, final long ts) {
             this.error_code = error_code;
             this.ts = ts;
-            this.message = message;
-            this.metadata = metadata;
         }
         public final String error_code;
         public final long ts;
-        public final String message;
-        public final JsonObject metadata;
     }
 
     private static final ConcurrentLinkedQueue<Err0Log> queue = new ConcurrentLinkedQueue<>();
@@ -78,8 +74,6 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
                     JsonObject o = new JsonObject();
                     o.addProperty("error_code", log.error_code);
                     o.addProperty("ts", Long.toString(log.ts));
-                    o.addProperty("msg", log.message);
-                    o.add("metadata", log.metadata);
 
                     logs.add(o);
                 }
@@ -117,21 +111,7 @@ public class Err0Appender extends AppenderBase<ILoggingEvent> {
         while (matcher.find()) {
             final String error_code = matcher.group(1);
             final long ts = event.getTimeStamp();
-            final JsonObject metadata = new JsonObject();
-            final JsonObject logbackMetadata = new JsonObject();
-            final Level level = event.getLevel();
-            logbackMetadata.addProperty("level", level.levelStr);
-            if (event.hasCallerData()) {
-                final StackTraceElement stack[] = event.getCallerData();
-                if (stack.length > 0) {
-                    final StackTraceElement source = stack[0];
-                    logbackMetadata.addProperty("source_class", source.getClassName());
-                    logbackMetadata.addProperty("source_file", source.getFileName());
-                    logbackMetadata.addProperty("source_line", source.getLineNumber());
-                }
-            }
-            metadata.add("logback", logbackMetadata);
-            queue.add(new Err0Log(error_code, ts, formattedMessage, metadata));
+            queue.add(new Err0Log(error_code, ts));
         }
     }
 }
